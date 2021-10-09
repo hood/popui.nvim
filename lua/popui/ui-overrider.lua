@@ -1,4 +1,5 @@
 local popfix = require"popfix"
+local borders = require"popui/borders"
 
 local popupReference = nil
 
@@ -69,7 +70,8 @@ local customUISelect = function(entries, stuff, onUserChoice)
     mode = 'cursor',
     list = {
       numbering = true,
-      border = true
+      border = true,
+      border_chars = borders[vim.g.popui_border_style or "rounded"],
     },
     data = formattedEntries
   })
