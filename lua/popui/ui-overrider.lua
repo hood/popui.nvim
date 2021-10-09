@@ -20,7 +20,7 @@ local formatEntries = function(entries, formatter)
   local results = {}
 
   for index, entry in pairs(entries) do
-    table.insert(results, string.format('%d: %s', index, formatItem(entry)))
+    table.insert(results, string.format('%s',  formatItem(entry)))
   end
 
   return results
@@ -51,11 +51,13 @@ local customUISelect = function(entries, stuff, onUserChoice)
       i = {
         ['<Cr>'] = function(popup)
           popup:close(function(sel) commitChoice(sel) end)
+          popupReference = nil
         end
       },
       n = {
         ['<Cr>'] = function(popup)
           popup:close(function(sel) commitChoice(sel) end)
+          popupReference = nil
         end
       },
     },
