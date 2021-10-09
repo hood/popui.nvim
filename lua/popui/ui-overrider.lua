@@ -61,6 +61,11 @@ local customUISelect = function(entries, stuff, onUserChoice)
         end
       },
     },
+    callbacks = {
+      close = function() 
+        popupReference = nil
+      end
+    },
     mode = 'cursor',
     list = {
       numbering = true,
