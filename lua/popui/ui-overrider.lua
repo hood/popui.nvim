@@ -50,7 +50,7 @@ local customUISelect = function(entries, stuff, onUserChoice)
     keymaps = {
       i = {
         ['<Cr>'] = function(popup)
-          popup:close(function(sel) commitChoice(sel) end
+          popup:close(function(sel) commitChoice(sel) end)
         end
       },
       n = {
