@@ -59,6 +59,14 @@ local customUISelect = function(entries, stuff, onUserChoice)
         ['<Cr>'] = function(popup)
           popup:close(function(sel) commitChoice(sel) end)
           popupReference = nil
+        end,
+        ['<C-o>'] = function(popup)
+          popup:close()
+          popupReference = nil
+        end,
+        ['<Esc>'] = function(popup)
+          popup:close()
+          popupReference = nil
         end
       },
     },
