@@ -30,13 +30,14 @@ local customUIInput = function(opts, onConfirm)
     },
     mode = 'cursor',
     prompt = {
-		border = true,
-		numbering = true,
-		title = opts.prompt,
-        border_chars = borders[vim.g.popui_border_style or "rounded"],
-		highlight = 'Normal',
-		prompt_highlight = 'Normal'
-	},
+      border = true,
+      numbering = true,
+      title = opts.prompt,
+      border_chars = borders[vim.g.popui_border_style or "rounded"],
+      highlight = 'Normal',
+      prompt_highlight = 'Normal',
+      init_text = opts.default
+    },
     data = {"textinput"}
   })
 end
