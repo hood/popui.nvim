@@ -23,7 +23,7 @@ Plugin 'hood/popui.nvim'
 ## Setup
 ```lua
 vim.ui.select = require"popui.ui-overrider"
-vim.ui.input = require"popui.ui-input-overrider"
+vim.ui.input = require"popui.input-overrider"
 ```
 
 ## Customize border style
