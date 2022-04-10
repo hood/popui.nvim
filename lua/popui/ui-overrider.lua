@@ -64,6 +64,10 @@ local customUISelect = function(entries, stuff, onUserChoice)
           popup:close()
           popupReference = nil
         end,
+        ['<C-c>'] = function(popup)
+          popup:close()
+          popupReference = nil
+        end,
         ['<Esc>'] = function(popup)
           popup:close()
           popupReference = nil
