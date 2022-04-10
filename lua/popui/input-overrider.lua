@@ -28,7 +28,7 @@ local customUIInput = function(opts, onConfirm)
         popupReference = nil
       end
     },
-    mode = 'cursor',
+    mode = 'editor',
     prompt = {
       border = true,
       numbering = true,
@@ -36,9 +36,8 @@ local customUIInput = function(opts, onConfirm)
       border_chars = borders[vim.g.popui_border_style or "rounded"],
       highlight = 'Normal',
       prompt_highlight = 'Normal',
-      init_text = opts.default
+      init_text = opts.default,
     },
-    data = {"textinput"}
   })
 end
 
