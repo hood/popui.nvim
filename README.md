@@ -8,8 +8,15 @@
 ## What's `popui` all about?
 It's a custom UI which overrides neovim's default `vim.ui.select` menu and `vim.ui.input` prompt, spawning a floating menu right where your cursor resides.
 <br/><br/>
-<b>See it in action below:</b>
-![Snapshot #1](https://i.imgur.com/XLYgxeo.png)
+<h3>See it in action below:</h3>
+<br/>
+<h4>Code action menu popup</h4>
+
+![Snapshot #1](https://i.imgur.com/ZKRBssU.png)
+<br/>
+<h4>Variable renaming input popup</h4>
+
+![Snapshot #2](https://i.imgur.com/G4tkHhK.png)
 
 ## Installation
 ```viml
