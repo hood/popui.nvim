@@ -36,6 +36,9 @@ Plugin 'hood/popui.nvim'
 vim.ui.select = require"popui.ui-overrider"
 vim.ui.input = require"popui.input-overrider"
 ```
+```vim
+nnoremap ,d :lua require'popui.diagnostics-navigator'()<CR>
+```
 
 ## Customize border style
 ```vim
