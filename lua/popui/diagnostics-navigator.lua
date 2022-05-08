@@ -17,7 +17,7 @@ end
 
 local formatEntries = function(entries)
   local formatItem = function(entry) 
-      return entry.row .. ':' .. entry.col .. ' [' .. entry.code .. '] ' .. entry.message
+      return (entry.row or '?') .. ':' .. (entry.col or '?') .. ' [' .. (entry.code or '?') .. '] ' .. (entry.message or '?')
     end
 
   local results = {}
