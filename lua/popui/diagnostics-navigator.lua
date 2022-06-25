@@ -30,7 +30,7 @@ local formatEntries = function(entries)
 end
 
 local diagnosticsNavigator = function()
-  local entries = vim.diagnostic.get()
+  local entries = vim.diagnostic.get(0)
 
   if (entries == nil or vim.tbl_isempty(entries)) then
     return
