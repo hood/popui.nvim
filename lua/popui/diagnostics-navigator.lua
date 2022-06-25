@@ -17,7 +17,7 @@ end
 
 local formatEntries = function(entries)
   local formatItem = function(entry) 
-      return (entry.row or '?') .. ':' .. (entry.col or '?') .. ' [' .. (entry.code or '?') .. '] ' .. (entry.message or '?')
+      return (entry.lnum or '?') .. ':' .. (entry.col or '?') .. ' [' .. (entry.code or '?') .. '] ' .. (entry.message or '?')
     end
 
   local results = {}
@@ -42,7 +42,7 @@ local diagnosticsNavigator = function()
   )
 
   local commitChoice = function(choiceIndex)
-    vim.api.nvim_win_set_cursor(0, { entries[choiceIndex].row, entries[choiceIndex].col })
+    vim.api.nvim_win_set_cursor(0, { entries[choiceIndex].lnum, entries[choiceIndex].col })
   end
 
   local formattedEntries = formatEntries(entries)
