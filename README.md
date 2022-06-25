@@ -1,4 +1,5 @@
 <div align="center">
+  <img src="/logo.png" alt="Logo" title="Logo">
   <h1>popui.nvim</h1>
   <h6>NeoVim UI sweetness powered by popfix.</h6>
 </div>
