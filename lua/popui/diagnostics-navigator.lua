@@ -42,7 +42,7 @@ local diagnosticsNavigator = function()
   )
 
   local commitChoice = function(choiceIndex)
-    vim.api.nvim_win_set_cursor(0, { entries[choiceIndex].lnum, entries[choiceIndex].col })
+    vim.api.nvim_win_set_cursor(0, { entries[choiceIndex].lnum + 1, entries[choiceIndex].col })
   end
 
   local formattedEntries = formatEntries(entries)
