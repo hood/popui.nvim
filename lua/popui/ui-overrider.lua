@@ -87,6 +87,10 @@ local customUISelect = function(entries, stuff, onUserChoice)
     },
     data = formattedEntries
   })
+
+	if popupReference == false then
+		popupReference = nil
+	end
 end
 
 return customUISelect

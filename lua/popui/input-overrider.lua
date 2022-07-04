@@ -43,6 +43,10 @@ local customUIInput = function(opts, onConfirm)
       init_text = opts.default,
     },
   })
+
+	if popupReference == false then
+		popupReference = nil
+	end
 end
 
 return customUIInput

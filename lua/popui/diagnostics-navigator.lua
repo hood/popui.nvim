@@ -97,6 +97,10 @@ local diagnosticsNavigator = function()
 		},
 		data = formattedEntries,
 	})
+
+	if popupReference == false then
+		popupReference = nil
+	end
 end
 
 return diagnosticsNavigator
