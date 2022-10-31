@@ -1,5 +1,6 @@
 local popfix = require"popfix"
 local borders = require"popui/borders"
+local core = require"popui/core"
 
 local popupReference = nil
 
@@ -44,6 +45,13 @@ local customUISelect = function(entries, stuff, onUserChoice)
 
   local formattedEntries = formatEntries(entries, stuff.format_item)
 
+  local coso = core:spawnPopup(
+    core.PopupTypes.List,
+    formattedEntries,
+    {}
+  )
+
+  --[[
   popupReference = popfix:new({
     width = calculatePopupWidth(formattedEntries),
     height = #formattedEntries,
@@ -87,6 +95,7 @@ local customUISelect = function(entries, stuff, onUserChoice)
     },
     data = formattedEntries
   })
+  ]]--
 
 	if popupReference == false then
 		popupReference = nil
