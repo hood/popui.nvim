@@ -1,4 +1,3 @@
-local borders = require("popui/borders")
 local core = require("popui/core")
 
 local formatEntries = function(entries)
