@@ -1,7 +1,7 @@
 <div align="center">
   <img src="/logo.png" alt="Logo" title="Logo">
   <h1>popui.nvim</h1>
-  <h6>NeoVim UI sweetness powered by popfix.</h6>
+  <h6>NeoVim UI sweetness.</h6>
 </div>
 
 <br/>
@@ -48,4 +48,4 @@ let g:popui_border_style = "double"
 ```
 
 ## Dependencies
-* [RishabhRD/popfix](https://github.com/RishabhRD/popfix)
+* No dependencies baby!
