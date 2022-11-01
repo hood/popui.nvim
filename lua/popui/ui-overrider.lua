@@ -1,4 +1,3 @@
-local borders = require("popui/borders")
 local core = require("popui/core")
 
 local formatEntries = function(entries, formatter)
@@ -18,7 +17,7 @@ local customUISelect = function(entries, stuff, onUserChoice)
 
 	core:spawnListPopup(formatEntries(entries, stuff.format_item), function(lineNumber, lineContent)
 		onUserChoice(entries[lineNumber], lineNumber)
-	end)
+	end, vim.g.popui_border_style)
 end
 
 return customUISelect

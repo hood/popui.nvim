@@ -31,7 +31,7 @@ local diagnosticsNavigator = function()
 
 	core:spawnListPopup(formatEntries(entries), function(lineNumber, lineContent)
 		vim.api.nvim_win_set_cursor(originalWindowId, { entries[lineNumber].lnum + 1, entries[lineNumber].col })
-	end)
+	end, vim.g.popui_border_style)
 end
 
 return diagnosticsNavigator

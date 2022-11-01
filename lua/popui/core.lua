@@ -38,7 +38,7 @@ local getLongestEntry = function(entries)
 end
 
 -- Calculate the position and size of the popup window, given the entries.
-local function getListWindowConfiguration(entries)
+local function getListWindowConfiguration(entries, bordersType)
 	local width, height = getNvimSize()
 
 	local popupWidth = entries and getLongestEntry(entries) + 5 or math.floor(width / 4)
@@ -61,12 +61,13 @@ local function getListWindowConfiguration(entries)
 		col = currentCursorPosition[2] - math.ceil(popupWidth / 2),
 		width = popupWidth,
 		height = popupHeight,
-		border = "rounded",
+		anchor = "SE",
+		border = bordersType == "sharp" and "single" or bordersType,
 	}
 end
 
 -- Calculate the position and size of the popup window, given the initial text.
-local function getInputWindowConfiguration(initialText)
+local function getInputWindowConfiguration(initialText, bordersType)
 	local width, height = getNvimSize()
 
 	local popupWidth = 48 -- initialText and #initialText + #"Rename to: " or 16
@@ -89,19 +90,8 @@ local function getInputWindowConfiguration(initialText)
 		col = currentCursorPosition[2] - math.ceil(popupWidth / 2),
 		width = popupWidth,
 		height = popupHeight,
-		border = "rounded",
-	}
-end
-
-local function getTitleWindowConfiguration(mainWindowOptions)
-	return {
-		relative = "editor",
-		win = 0,
-		row = mainWindowOptions - 1,
-		col = mainWindowOptions.col,
-		width = mainWindowOptions.width,
-		height = mainWindowOptions.height,
-		border = "single",
+		anchor = "SE",
+		border = bordersType == "sharp" and "single" or bordersType,
 	}
 end
 
@@ -201,11 +191,11 @@ function Core:closeActivePopup()
 	end
 end
 
-function Core:spawnListPopup(entries, handleConfirm)
+function Core:spawnListPopup(entries, handleConfirm, bordersType)
 	local popupBufferNumber = self:initializePopup(self.PopupTypes.List)
 
 	-- Create the popup, calculating its size based on the entries.
-	local popupWindowId = self:createWindow(popupBufferNumber, true, getListWindowConfiguration(entries))
+	local popupWindowId = self:createWindow(popupBufferNumber, true, getListWindowConfiguration(entries, bordersType))
 
 	-- Write entries into the popup.
 	vim.api.nvim_buf_set_lines(popupBufferNumber, 0, -1, false, entries)
@@ -226,11 +216,12 @@ function Core:spawnListPopup(entries, handleConfirm)
 	self:setupDefaultKeymaps(popupBufferNumber, popupWindowId)
 end
 
-function Core:spawnInputPopup(initialText, handleConfirm)
+function Core:spawnInputPopup(initialText, handleConfirm, bordersType)
 	local popupBufferNumber = self:initializePopup(self.PopupTypes.Input)
 
 	-- Create the popup, calculating its size based on the entries.
-	local popupWindowId = self:createWindow(popupBufferNumber, true, getInputWindowConfiguration(initialText))
+	local popupWindowId =
+		self:createWindow(popupBufferNumber, true, getInputWindowConfiguration(initialText, bordersType))
 
 	local prefix = "Rename to: "
 
