@@ -52,13 +52,10 @@ local function getListWindowConfiguration(entries, bordersType)
 		error("unable to create the config, your window is too small, please zoom out")
 	end
 
-	local currentCursorPosition = vim.api.nvim_win_get_cursor(0)
-
 	return {
-		relative = "win",
-		win = 0,
-		row = currentCursorPosition[1] - math.ceil(popupHeight / 2),
-		col = currentCursorPosition[2] - math.ceil(popupWidth / 2),
+		relative = "cursor",
+		row = 0,
+		col = math.ceil(popupWidth / 2),
 		width = popupWidth,
 		height = popupHeight,
 		anchor = "SE",
@@ -81,13 +78,10 @@ local function getInputWindowConfiguration(initialText, bordersType)
 		error("unable to create the config, your window is too small, please zoom out")
 	end
 
-	local currentCursorPosition = vim.api.nvim_win_get_cursor(0)
-
 	return {
-		relative = "win",
-		win = 0,
-		row = currentCursorPosition[1] - math.ceil(popupHeight / 2),
-		col = currentCursorPosition[2] - math.ceil(popupWidth / 2),
+		relative = "cursor",
+		row = 0,
+		col = math.ceil(popupWidth / 2),
 		width = popupWidth,
 		height = popupHeight,
 		anchor = "SE",
