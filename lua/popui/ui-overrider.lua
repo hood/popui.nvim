@@ -2,18 +2,6 @@ local popfix = require("popfix")
 local borders = require("popui/borders")
 local core = require("popui/core")
 
-local calculatePopupWidth = function(entries)
-	local result = 0
-
-	for index, entry in pairs(entries) do
-		if #entry > result then
-			result = #entry
-		end
-	end
-
-	return result + 5
-end
-
 local formatEntries = function(entries, formatter)
 	local formatItem = formatter or tostring
 
@@ -29,15 +17,9 @@ end
 local customUISelect = function(entries, stuff, onUserChoice)
 	assert(entries ~= nil and not vim.tbl_isempty(entries), "No entries available.")
 
-	local commitChoice = function(choiceIndex)
-		onUserChoice(entries[choiceIndex], choiceIndex)
-	end
-
-	local formattedEntries = formatEntries(entries, stuff.format_item)
-
-	local coso = core:spawnPopup(core.PopupTypes.List, formattedEntries, {
+	core:spawnPopup(core.PopupTypes.List, formatEntries(entries, stuff.format_item), {
 		["<Cr>"] = function(lineNumber, lineContent)
-			commitChoice(lineNumber)
+			onUserChoice(entries[lineNumber], lineNumber)
 			core:closeActivePopup()
 		end,
 	})

@@ -37,7 +37,7 @@ local getLongestEntry = function(entries)
 end
 
 -- Calculate the position and size of the popup window, given the entries.
-local function getWindowConfiguration(entries)
+local function getListWindowConfiguration(entries)
 	local width, height = getNvimSize()
 
 	local popupWidth = entries and getLongestEntry(entries) + 5 or math.floor(width / 4)
@@ -64,12 +64,53 @@ local function getWindowConfiguration(entries)
 	}
 end
 
-function Core:createBuffer()
+-- Calculate the position and size of the popup window, given the initial text.
+local function getInputWindowConfiguration(initialText)
+	local width, height = getNvimSize()
+
+	local popupWidth = 48 -- initialText and #initialText + #"Rename to: " or 16
+	local popupHeight = 1
+
+	if popupHeight > height then
+		error("unable to create the config, your window is too small, please zoom out")
+	end
+
+	if popupWidth > width then
+		error("unable to create the config, your window is too small, please zoom out")
+	end
+
+	local currentCursorPosition = vim.api.nvim_win_get_cursor(0)
+
+	return {
+		relative = "win",
+		win = 0,
+		row = currentCursorPosition[1] - math.ceil(popupHeight / 2),
+		col = currentCursorPosition[2] - math.ceil(popupWidth / 2),
+		width = popupWidth,
+		height = popupHeight,
+		border = "rounded",
+	}
+end
+
+local function getTitleWindowConfiguration(mainWindowOptions)
+	return {
+		relative = "editor",
+		win = 0,
+		row = mainWindowOptions - 1,
+		col = mainWindowOptions.col,
+		width = mainWindowOptions.width,
+		height = mainWindowOptions.height,
+		border = "single",
+	}
+end
+
+function Core:createBuffer(popupType)
 	local bufferNumber = vim.api.nvim_create_buf(false, true)
 
 	vim.bo[bufferNumber].modifiable = true
 	vim.bo[bufferNumber].readonly = false
 	vim.bo[bufferNumber].bufhidden = true
+	vim.bo[bufferNumber].textwidth = 100
 
 	return bufferNumber
 end
@@ -87,14 +128,31 @@ function Core:createWindow(bufferNumber, shouldEnter, configuration)
 end
 
 function Core:setupKeymaps(popupBufferNumber, popupWindowId, keymaps)
-	-- TODO: Set ESC to close the window.
-	-- TODO: Set CTRL-C to close the window.
+	if vim.tbl_isempty(keymaps) then
+		return
+	end
 
 	for key, callback in pairs(keymaps) do
 		vim.api.nvim_buf_set_keymap(popupBufferNumber, "n", key, "", {
 			noremap = true,
 			silent = true,
 			callback = function()
+				print("normal callback invoked")
+
+				local currentLineNumber = vim.api.nvim_win_get_cursor(popupWindowId)[1]
+				local currentLineContent =
+					vim.api.nvim_buf_get_lines(popupBufferNumber, currentLineNumber - 1, currentLineNumber, false)[1]
+
+				callback(currentLineNumber, currentLineContent)
+			end,
+		})
+
+		vim.api.nvim_buf_set_keymap(popupBufferNumber, "i", key, "", {
+			noremap = true,
+			silent = true,
+			callback = function()
+				print("insert callback invoked")
+
 				local currentLineNumber = vim.api.nvim_win_get_cursor(popupWindowId)[1]
 				local currentLineContent =
 					vim.api.nvim_buf_get_lines(popupBufferNumber, currentLineNumber - 1, currentLineNumber, false)[1]
@@ -112,10 +170,14 @@ function Core:setupDefaultKeymaps(popupBufferNumber, popupWindowId)
 		-- 	vim.api.nvim_set_current_buf(bufferNumber)
 		-- 	vim.api.nvim_win_set_cursor(windowId, { lineNumber, 0 })
 		-- end,
-		["<ESC>"] = function()
+		["<Esc>"] = function()
+			print("PRESSED ESC")
 			self:closePopup(popupBufferNumber, popupWindowId)
 		end,
 		["<C-c>"] = function()
+			self:closePopup(popupBufferNumber, popupWindowId)
+		end,
+		["<C-o>"] = function()
 			self:closePopup(popupBufferNumber, popupWindowId)
 		end,
 	}
@@ -125,7 +187,7 @@ end
 
 function Core:spawnListPopup(bufferNumber, entries)
 	-- Create the popup, calculating its size based on the entries.
-	local windowId = self:createWindow(bufferNumber, true, getWindowConfiguration(entries))
+	local windowId = self:createWindow(bufferNumber, true, getListWindowConfiguration(entries))
 
 	-- TODO: Write title.
 	-- Write entries into the popup.
@@ -144,10 +206,37 @@ function Core:spawnListPopup(bufferNumber, entries)
 	return windowId
 end
 
+function Core:spawnInputPopup(popupBufferNumber, initialText)
+	-- Create the popup, calculating its size based on the entries.
+	local popupWindowId = self:createWindow(popupBufferNumber, true, getInputWindowConfiguration(initialText))
+
+	local prefix = "Rename to: "
+
+	-- Make the popup an interactive prompt.
+	vim.api.nvim_buf_set_option(popupBufferNumber, "modifiable", true)
+	vim.api.nvim_buf_set_option(popupBufferNumber, "readonly", false)
+	vim.api.nvim_buf_set_option(popupBufferNumber, "bufhidden", "hide")
+	vim.api.nvim_buf_set_option(popupBufferNumber, "buftype", "prompt")
+	vim.api.nvim_win_set_option(popupWindowId, "wrap", false)
+	vim.api.nvim_win_set_option(popupWindowId, "number", false)
+	vim.api.nvim_win_set_option(popupWindowId, "relativenumber", false)
+	vim.fn.prompt_setprompt(popupBufferNumber, prefix)
+
+	-- NOTE: Very important! If you're trying to set lines for a prompt buffer
+	-- with a prefix, you have to set `prefix..initialText` and not just `initialText`,
+	-- even if you had already set the prefix with `prompt_setprompt`.
+	local lineToSet = prefix .. initialText
+	local lineCount = vim.api.nvim_buf_line_count(popupBufferNumber)
+	vim.api.nvim_buf_set_lines(popupBufferNumber, lineCount - 1, -1, false, { lineToSet })
+	vim.cmd("startinsert!")
+
+	return popupWindowId
+end
+
 -- TODO: Export generic and switch for specialized, or export specialized?
-function Core:spawnPopup(popupType, entries, keymaps)
+function Core:spawnPopup(popupType, entries, keymaps, initialText)
 	local containerWindowId = vim.api.nvim_get_current_win()
-	local popupBufferNumber = self:createBuffer()
+	local popupBufferNumber = self:createBuffer(popupType)
 	local popupWindowId = nil
 
 	-- Handle LIST type popups.
@@ -155,21 +244,20 @@ function Core:spawnPopup(popupType, entries, keymaps)
 		popupWindowId = self:spawnListPopup(popupBufferNumber, entries)
 	-- Handle INPUT type popups.
 	elseif popupType == self.PopupTypes.Input then
-		print("Todo!")
+		popupWindowId = self:spawnInputPopup(popupBufferNumber, initialText)
 	end
 
 	-- TODO: Draw title in a single row window above the popup.
 
 	if popupWindowId == nil then
 		error("Unable to create the popup window.")
-		return
 	end
-
-	self:setupKeymaps(popupBufferNumber, popupWindowId, keymaps)
-	self:setupDefaultKeymaps(popupBufferNumber, popupWindowId)
 
 	self.activeWindowId = popupWindowId
 	self.activeBufferNumber = popupBufferNumber
+
+	-- self:setupKeymaps(popupBufferNumber, popupWindowId, keymaps)
+	self:setupDefaultKeymaps(popupBufferNumber, popupWindowId)
 end
 
 function Core:closePopup(popupBufferNumber, popupWindowId)
@@ -180,6 +268,7 @@ function Core:closePopup(popupBufferNumber, popupWindowId)
 	self.activeBufferNumber = nil
 end
 
+-- This is intended for external usage only, we avoid using it internally.
 function Core:closeActivePopup()
 	if self.activeWindowId ~= nil and self.activeBufferNumber ~= nil then
 		self:closePopup(self.activeBufferNumber, self.activeWindowId)
