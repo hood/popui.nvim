@@ -2,10 +2,7 @@ local Core = {}
 Core._index = Core
 
 Core.activeWindowId = nil
-Core.activeBufferId = nil
-
-TOTAL_REQUIRED_WIDTH = 4
-TOTAL_REQUIRED_HEIGHT = 4
+Core.activeBufferNumber = nil
 
 Core.PopupTypes = {
 	List = "list",
@@ -43,16 +40,16 @@ end
 local function getWindowConfiguration(entries)
 	local width, height = getNvimSize()
 
-	if TOTAL_REQUIRED_HEIGHT > height then
-		error("unable to create the config, your window is too small, please zoom out")
-	end
-
-	if TOTAL_REQUIRED_WIDTH > width then
-		error("unable to create the config, your window is too small, please zoom out")
-	end
-
 	local popupWidth = entries and getLongestEntry(entries) + 5 or math.floor(width / 4)
 	local popupHeight = entries and #entries or 1
+
+	if popupHeight > height then
+		error("unable to create the config, your window is too small, please zoom out")
+	end
+
+	if popupWidth > width then
+		error("unable to create the config, your window is too small, please zoom out")
+	end
 
 	local currentCursorPosition = vim.api.nvim_win_get_cursor(0)
 
@@ -170,11 +167,23 @@ function Core:spawnPopup(popupType, entries, keymaps)
 
 	self:setupKeymaps(popupBufferNumber, popupWindowId, keymaps)
 	self:setupDefaultKeymaps(popupBufferNumber, popupWindowId)
+
+	self.activeWindowId = popupWindowId
+	self.activeBufferNumber = popupBufferNumber
 end
 
 function Core:closePopup(popupBufferNumber, popupWindowId)
 	vim.api.nvim_win_close(popupWindowId, true)
 	vim.api.nvim_buf_delete(popupBufferNumber, { force = true })
+
+	self.activeWindowId = nil
+	self.activeBufferNumber = nil
+end
+
+function Core:closeActivePopup()
+	if self.activeWindowId ~= nil and self.activeBufferNumber ~= nil then
+		self:closePopup(self.activeBufferNumber, self.activeWindowId)
+	end
 end
 
 return Core
