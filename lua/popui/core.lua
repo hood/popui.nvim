@@ -3,6 +3,7 @@ Core._index = Core
 
 Core.activeWindowId = nil
 Core.activeBufferNumber = nil
+Core.activePopupType = nil
 
 Core.PopupTypes = {
 	List = "list",
@@ -132,44 +133,31 @@ function Core:setupKeymaps(popupBufferNumber, popupWindowId, keymaps)
 		return
 	end
 
-	for key, callback in pairs(keymaps) do
-		vim.api.nvim_buf_set_keymap(popupBufferNumber, "n", key, "", {
-			noremap = true,
-			silent = true,
-			callback = function()
-				print("normal callback invoked")
+	local modes = { "n", "v", "i" }
 
-				local currentLineNumber = vim.api.nvim_win_get_cursor(popupWindowId)[1]
-				local currentLineContent =
-					vim.api.nvim_buf_get_lines(popupBufferNumber, currentLineNumber - 1, currentLineNumber, false)[1]
+	for _, mode in pairs(modes) do
+		for key, callback in pairs(keymaps) do
+			vim.api.nvim_buf_set_keymap(popupBufferNumber, mode, key, "", {
+				noremap = true,
+				silent = true,
+				callback = function()
+					local currentLineNumber = vim.api.nvim_win_get_cursor(popupWindowId)[1]
+					local currentLineContent = vim.api.nvim_buf_get_lines(
+						popupBufferNumber,
+						currentLineNumber - 1,
+						currentLineNumber,
+						false
+					)[1]
 
-				callback(currentLineNumber, currentLineContent)
-			end,
-		})
-
-		vim.api.nvim_buf_set_keymap(popupBufferNumber, "i", key, "", {
-			noremap = true,
-			silent = true,
-			callback = function()
-				print("insert callback invoked")
-
-				local currentLineNumber = vim.api.nvim_win_get_cursor(popupWindowId)[1]
-				local currentLineContent =
-					vim.api.nvim_buf_get_lines(popupBufferNumber, currentLineNumber - 1, currentLineNumber, false)[1]
-
-				callback(currentLineNumber, currentLineContent)
-			end,
-		})
+					callback(currentLineNumber, currentLineContent)
+				end,
+			})
+		end
 	end
 end
 
 function Core:setupDefaultKeymaps(popupBufferNumber, popupWindowId)
 	local keymaps = {
-		-- ["<CR>"] = function(lineNumber, lineContent)
-		-- 	vim.api.nvim_win_close(windowId, true)
-		-- 	vim.api.nvim_set_current_buf(bufferNumber)
-		-- 	vim.api.nvim_win_set_cursor(windowId, { lineNumber, 0 })
-		-- end,
 		["<Esc>"] = function()
 			print("PRESSED ESC")
 			self:closePopup(popupBufferNumber, popupWindowId)
@@ -185,28 +173,62 @@ function Core:setupDefaultKeymaps(popupBufferNumber, popupWindowId)
 	self:setupKeymaps(popupBufferNumber, popupWindowId, keymaps)
 end
 
-function Core:spawnListPopup(bufferNumber, entries)
-	-- Create the popup, calculating its size based on the entries.
-	local windowId = self:createWindow(bufferNumber, true, getListWindowConfiguration(entries))
+function Core:initializePopup(popupType)
+	local popupBufferNumber = self:createBuffer(popupType)
 
-	-- TODO: Write title.
-	-- Write entries into the popup.
-	vim.api.nvim_buf_set_lines(bufferNumber, 0, -1, false, entries)
-
-	-- Seal the popup.
-	vim.api.nvim_buf_set_option(bufferNumber, "modifiable", false)
-	vim.api.nvim_buf_set_option(bufferNumber, "readonly", true)
-
-	-- Force buffer to normal mode
-	-- vim.api.nvim_buf_set_option(bufferNumber, "buftype", "prompt")
-
-	-- Set the cursor to the first line.
-	vim.api.nvim_win_set_cursor(windowId, { 1, 0 })
-
-	return windowId
+	return popupBufferNumber
 end
 
-function Core:spawnInputPopup(popupBufferNumber, initialText)
+function Core:registerPopup(popupWindowId, popupBufferNumber, popupType)
+	self.popupWindowId = popupWindowId
+	self.popupBufferNumber = popupBufferNumber
+	self.activePopupType = popupType
+end
+
+function Core:closePopup(popupBufferNumber, popupWindowId)
+	vim.api.nvim_win_close(popupWindowId, true)
+	vim.api.nvim_buf_delete(popupBufferNumber, { force = true })
+
+	self.activeWindowId = nil
+	self.activeBufferNumber = nil
+	self.activePopupType = nil
+end
+
+-- This is intended for external usage only, we avoid using it internally.
+function Core:closeActivePopup()
+	if self.activeWindowId ~= nil and self.activeBufferNumber ~= nil then
+		self:closePopup(self.activeBufferNumber, self.activeWindowId)
+	end
+end
+
+function Core:spawnListPopup(entries, handleConfirm)
+	local popupBufferNumber = self:initializePopup(self.PopupTypes.List)
+
+	-- Create the popup, calculating its size based on the entries.
+	local popupWindowId = self:createWindow(popupBufferNumber, true, getListWindowConfiguration(entries))
+
+	-- Write entries into the popup.
+	vim.api.nvim_buf_set_lines(popupBufferNumber, 0, -1, false, entries)
+
+	-- Seal the popup.
+	vim.api.nvim_buf_set_option(popupBufferNumber, "modifiable", false)
+	vim.api.nvim_buf_set_option(popupBufferNumber, "readonly", true)
+
+	-- Set the cursor to the first line.
+	vim.api.nvim_win_set_cursor(popupWindowId, { 1, 0 })
+
+	self:setupKeymaps(popupBufferNumber, popupWindowId, {
+		["<Cr>"] = function(lineNumber, lineContent)
+			handleConfirm(lineNumber, lineContent)
+			self:closePopup(popupBufferNumber, popupWindowId)
+		end,
+	})
+	self:setupDefaultKeymaps(popupBufferNumber, popupWindowId)
+end
+
+function Core:spawnInputPopup(initialText, handleConfirm)
+	local popupBufferNumber = self:initializePopup(self.PopupTypes.Input)
+
 	-- Create the popup, calculating its size based on the entries.
 	local popupWindowId = self:createWindow(popupBufferNumber, true, getInputWindowConfiguration(initialText))
 
@@ -226,53 +248,17 @@ function Core:spawnInputPopup(popupBufferNumber, initialText)
 	-- with a prefix, you have to set `prefix..initialText` and not just `initialText`,
 	-- even if you had already set the prefix with `prompt_setprompt`.
 	local lineToSet = prefix .. initialText
-	local lineCount = vim.api.nvim_buf_line_count(popupBufferNumber)
-	vim.api.nvim_buf_set_lines(popupBufferNumber, lineCount - 1, -1, false, { lineToSet })
+	local linesCount = vim.api.nvim_buf_line_count(popupBufferNumber)
+	vim.api.nvim_buf_set_lines(popupBufferNumber, linesCount - 1, -1, false, { lineToSet })
 	vim.cmd("startinsert!")
 
-	return popupWindowId
-end
-
--- TODO: Export generic and switch for specialized, or export specialized?
-function Core:spawnPopup(popupType, entries, keymaps, initialText)
-	local containerWindowId = vim.api.nvim_get_current_win()
-	local popupBufferNumber = self:createBuffer(popupType)
-	local popupWindowId = nil
-
-	-- Handle LIST type popups.
-	if popupType == self.PopupTypes.List then
-		popupWindowId = self:spawnListPopup(popupBufferNumber, entries)
-	-- Handle INPUT type popups.
-	elseif popupType == self.PopupTypes.Input then
-		popupWindowId = self:spawnInputPopup(popupBufferNumber, initialText)
-	end
-
-	-- TODO: Draw title in a single row window above the popup.
-
-	if popupWindowId == nil then
-		error("Unable to create the popup window.")
-	end
-
-	self.activeWindowId = popupWindowId
-	self.activeBufferNumber = popupBufferNumber
-
-	-- self:setupKeymaps(popupBufferNumber, popupWindowId, keymaps)
+	self:setupKeymaps(popupBufferNumber, popupWindowId, {
+		["<Cr>"] = function(lineNumber, lineContent)
+			handleConfirm(lineNumber, lineContent:sub(#"Rename to: " + 1))
+			self:closePopup(popupBufferNumber, popupWindowId)
+		end,
+	})
 	self:setupDefaultKeymaps(popupBufferNumber, popupWindowId)
-end
-
-function Core:closePopup(popupBufferNumber, popupWindowId)
-	vim.api.nvim_win_close(popupWindowId, true)
-	vim.api.nvim_buf_delete(popupBufferNumber, { force = true })
-
-	self.activeWindowId = nil
-	self.activeBufferNumber = nil
-end
-
--- This is intended for external usage only, we avoid using it internally.
-function Core:closeActivePopup()
-	if self.activeWindowId ~= nil and self.activeBufferNumber ~= nil then
-		self:closePopup(self.activeBufferNumber, self.activeWindowId)
-	end
 end
 
 return Core

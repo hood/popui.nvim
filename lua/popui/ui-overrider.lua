@@ -1,4 +1,3 @@
-local popfix = require("popfix")
 local borders = require("popui/borders")
 local core = require("popui/core")
 
@@ -17,12 +16,9 @@ end
 local customUISelect = function(entries, stuff, onUserChoice)
 	assert(entries ~= nil and not vim.tbl_isempty(entries), "No entries available.")
 
-	core:spawnPopup(core.PopupTypes.List, formatEntries(entries, stuff.format_item), {
-		["<Cr>"] = function(lineNumber, lineContent)
-			onUserChoice(entries[lineNumber], lineNumber)
-			core:closeActivePopup()
-		end,
-	})
+	core:spawnListPopup(formatEntries(entries, stuff.format_item), function(lineNumber, lineContent)
+		onUserChoice(entries[lineNumber], lineNumber)
+	end)
 end
 
 return customUISelect

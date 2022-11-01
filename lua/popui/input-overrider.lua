@@ -1,58 +1,10 @@
-local popfix = require("popfix")
 local borders = require("popui/borders")
 local core = require("popui/core")
 
-local popupReference = nil
-
-local customUIInput = function(opts, onConfirm)
-	assert(popupReference == nil, "Busy in other LSP popup.")
-
-	core:spawnPopup(core.PopupTypes.Input, nil, {
-		["<Cr>"] = function(lineNumber, lineContent)
-			onConfirm(lineContent)
-			core:closeActivePopup()
-		end,
-	}, opts.default)
+local customUIInput = function(options, onConfirm)
+	core:spawnInputPopup(options.default, function(lineNumber, lineContent)
+		onConfirm(lineContent)
+	end)
 end
-
--- popupReference = popfix:new({
---   close_on_bufleave = true,
---   keymaps = {
---     i = {
---       ['<Cr>'] = function(popup)
---         popup:close(function(_, text) onConfirm(text) end)
---         popupReference = nil
---       end,
---       ['<C-c>'] = function(popup)
---         popup:close()
---         popupReference = nil
---       end,
---       ['<Esc>'] = function(popup)
---         popup:close()
---         popupReference = nil
---       end
---     },
---   },
---   callbacks = {
---     close = function()
---       popupReference = nil
---     end
---   },
---   mode = 'editor',
---   prompt = {
---     border = true,
---     numbering = true,
---     title = opts.prompt,
---     border_chars = borders[vim.g.popui_border_style or "rounded"],
---     highlight = 'Normal',
---     prompt_highlight = 'Normal',
---     init_text = opts.default,
---   },
--- })
-
--- 	if popupReference == false then
--- 		popupReference = nil
--- 	end
--- end
 
 return customUIInput
