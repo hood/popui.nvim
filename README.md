@@ -13,15 +13,15 @@ It's collection of custom UI utilities to make your NeoVim workflow faster. It c
 <br/>
 <h4>Code action menu popup</h4>
 
-![Snapshot #1](https://i.imgur.com/ZKRBssU.png)
+![Snapshot #1](https://i.imgur.com/qD1IbmA.png)
 <br/>
 <h4>Variable renaming input popup</h4>
 
-![Snapshot #2](https://i.imgur.com/G4tkHhK.png)
+![Snapshot #2](https://i.imgur.com/kL2QxFR.png)
 <br />
 <h4>Diagnostics navigator</h4>
 
-![Snapshot #3](https://i.imgur.com/Ny0TfXz.png)
+![Snapshot #3](https://i.imgur.com/Eh0JX4C.png)
 
 ## Installation
 ```viml
