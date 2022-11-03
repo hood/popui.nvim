@@ -20,6 +20,7 @@ It's collection of custom UI utilities to make your NeoVim workflow faster. It c
 ![Snapshot #2](https://i.imgur.com/kL2QxFR.png)
 <br />
 <h4>Diagnostics navigator</h4>
+(Displays all diagnostic messages for the current buffer. Press <Cr> to jump to the currently highlighted diagnostic coordinates.)
 
 ![Snapshot #3](https://i.imgur.com/Eh0JX4C.png)
 
@@ -37,12 +38,12 @@ Plugin 'hood/popui.nvim'
 vim.ui.select = require"popui.ui-overrider"
 vim.ui.input = require"popui.input-overrider"
 ```
-```vim
+```viml
 nnoremap ,d :lua require'popui.diagnostics-navigator'()<CR>
 ```
 
 ## Customize border style
-```vim
+```viml
 " Available styles: "sharp" | "rounded" | "double"
 let g:popui_border_style = "double"
 ```
