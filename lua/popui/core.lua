@@ -66,7 +66,7 @@ local function getListWindowConfiguration(entries, bordersType)
         width = popupWidth,
         height = popupHeight,
         anchor = "SE",
-        border = bordersType == "sharp" and "single" or bordersType,
+        border = bordersType == "sharp" and "single" or bordersType or "single",
     }
 end
 
@@ -96,7 +96,7 @@ local function getInputWindowConfiguration(initialText, bordersType)
         width = popupWidth,
         height = popupHeight,
         anchor = "SE",
-        border = bordersType == "sharp" and "single" or bordersType,
+        border = bordersType == "sharp" and "single" or bordersType or "single",
     }
 end
 
