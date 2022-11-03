@@ -71,10 +71,11 @@ local function getListWindowConfiguration(entries, bordersType)
 end
 
 -- Calculate the position and size of the popup window, given the initial text.
-local function getInputWindowConfiguration(initialText, bordersType)
+local function getInputWindowConfiguration(initialText, windowTitle, bordersType)
     local width, height = getNvimSize()
 
-    local popupWidth = 48 -- initialText and #initialText + #"Rename to: " or 16
+
+    local popupWidth = math.max(#(initialText or ""), #(windowTitle or "")) + 4
     local popupHeight = 1
 
     if popupHeight > height then
@@ -243,14 +244,6 @@ end
 
 -- Closes the currently active popup and its title popup.
 function Core:closeActivePopup()
-    print(vim.inspect({
-        self.activePopupWindowId,
-        self.activePopupBufferNumber,
-        self.activePopupType,
-        self.activeTitleWindowId,
-        self.activeTitleBufferNumber,
-    }))
-
     -- Clean the popup window and buffer.
     self:wipePopup(self.activePopupWindowId, self.activePopupBufferNumber)
 
@@ -310,10 +303,10 @@ function Core:spawnInputPopup(windowTitle, initialText, handleConfirm, bordersTy
     -- Create the popup, calculating its size based on the entries.
     local popupWindowId = self:createWindow(
         popupBufferNumber,
-        getInputWindowConfiguration(initialText, bordersType)
+        getInputWindowConfiguration(initialText, windowTitle, bordersType)
     )
 
-    local prefix = "Rename to: "
+    local prefix = ">"
 
     -- Make the popup an interactive prompt.
     vim.api.nvim_buf_set_option(popupBufferNumber, "modifiable", true)
@@ -328,7 +321,7 @@ function Core:spawnInputPopup(windowTitle, initialText, handleConfirm, bordersTy
     -- NOTE: Very important! If you're trying to set lines for a prompt buffer
     -- with a prefix, you have to set `prefix..initialText` and not just `initialText`,
     -- even if you had already set the prefix with `prompt_setprompt`.
-    local lineToSet = prefix .. initialText
+    local lineToSet = prefix .. (initialText or "")
     local linesCount = vim.api.nvim_buf_line_count(popupBufferNumber)
     vim.api.nvim_buf_set_lines(
         popupBufferNumber,
@@ -344,7 +337,7 @@ function Core:spawnInputPopup(windowTitle, initialText, handleConfirm, bordersTy
 
     self:setupKeymaps(popupBufferNumber, popupWindowId, {
         ["<Cr>"] = function(lineNumber, lineContent)
-            handleConfirm(lineNumber, lineContent:sub(#"Rename to: " + 1))
+            handleConfirm(lineNumber, lineContent:sub(#prefix + 1))
             self:closeActivePopup()
         end,
     })

@@ -2,7 +2,7 @@ local core = require("popui/core")
 
 local customUIInput = function(options, onConfirm)
     core:spawnInputPopup(
-        "Rename",
+        options.prompt or "Input",
         options.default,
         function(lineNumber, lineContent)
             onConfirm(lineContent)
