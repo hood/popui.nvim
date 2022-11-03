@@ -13,16 +13,16 @@ It's a tiny (currently 337 LoC) collection of custom UI utilities to make your N
 <br/>
 <h4>Code action menu popup</h4>
 
-![Snapshot #1](https://i.imgur.com/qD1IbmA.png)
+![Snapshot #1](https://i.imgur.com/tjsUiTo.png)
 <br/>
 <h4>Variable renaming input popup</h4>
 
-![Snapshot #2](https://i.imgur.com/kL2QxFR.png)
+![Snapshot #2](https://i.imgur.com/d5COuVp.png)
 <br />
 <h4>Diagnostics navigator</h4>
 (Displays all diagnostic messages for the current buffer. Press <Cr> to jump to the currently highlighted diagnostic coordinates.)
 
-![Snapshot #3](https://i.imgur.com/Eh0JX4C.png)
+![Snapshot #3](https://i.imgur.com/ZHYi372.png)
 
 ## Installation
 ```viml
