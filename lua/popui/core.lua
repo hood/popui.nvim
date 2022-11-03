@@ -39,13 +39,9 @@ local getLongestEntry = function(entries)
     return result
 end
 
--- Calculate the position and size of the popup window, given the entries.
-local function getListWindowConfiguration(entries, bordersType)
+-- Checks whether the popup window fits in the current window.
+local function validatePopupSize(popupWidth, popupHeight)
     local width, height = getNvimSize()
-
-    local popupWidth = entries and getLongestEntry(entries) + 5
-        or math.floor(width / 4)
-    local popupHeight = entries and #entries or 1
 
     if popupHeight > height then
         error(
@@ -58,6 +54,15 @@ local function getListWindowConfiguration(entries, bordersType)
             "unable to create the config, your window is too small, please zoom out"
         )
     end
+end
+
+-- Calculate the position and size of the popup window, given the entries.
+local function getListWindowConfiguration(entries, bordersType)
+    local popupWidth = entries and getLongestEntry(entries) + 4
+        or 8
+    local popupHeight = entries and #entries or 1
+
+    validatePopupSize(popupWidth, popupHeight)
 
     return {
         relative = "cursor",
@@ -72,23 +77,10 @@ end
 
 -- Calculate the position and size of the popup window, given the initial text.
 local function getInputWindowConfiguration(initialText, windowTitle, bordersType)
-    local width, height = getNvimSize()
-
-
     local popupWidth = math.max(#(initialText or ""), #(windowTitle or "")) + 4
     local popupHeight = 1
 
-    if popupHeight > height then
-        error(
-            "unable to create the config, your window is too small, please zoom out"
-        )
-    end
-
-    if popupWidth > width then
-        error(
-            "unable to create the config, your window is too small, please zoom out"
-        )
-    end
+    validatePopupSize(popupWidth, popupHeight)
 
     return {
         relative = "cursor",
@@ -106,8 +98,8 @@ function Core:addTitleToWindow(referenceWindowId, title)
         return
     end
 
-    -- HACK to force the parent window to position itself
-    -- See https://github.com/neovim/neovim/issues/13403
+    -- Hack to force the parent window to position itself.
+    -- (See https://github.com/neovim/neovim/issues/13403)
     vim.cmd("redraw")
 
     local width = math.min(

@@ -7,7 +7,7 @@
 <br/>
 
 ## What's `popui` all about?
-It's collection of custom UI utilities to make your NeoVim workflow faster. It consists of two (`ui-overrider`, `input-overrider`) utilities which override neovim's default `vim.ui.select` menu and `vim.ui.input` prompt, spawning a floating menu right where your cursor resides, and a `diagnostics-navigator` utility to quickly navigate (and jump to) LSP diagnostics issues in the current buffer.
+It's a tiny (currently 337 LoC) collection of custom UI utilities to make your NeoVim workflow faster. It consists of two (`ui-overrider`, `input-overrider`) utilities which override neovim's default `vim.ui.select` menu and `vim.ui.input` prompt, spawning a floating menu right where your cursor resides, and a `diagnostics-navigator` utility to quickly navigate (and jump to) LSP diagnostics issues in the current buffer.
 <br/><br/>
 <h3>See it in action below:</h3>
 <br/>
