@@ -166,8 +166,9 @@ function Core:createWindow(bufferNumber, configuration)
     local windowId = vim.api.nvim_open_win(bufferNumber, true, configuration)
 
     vim.wo[windowId].rnu = false
-    vim.wo[windowId].nu = false
+    vim.wo[windowId].number = false
     vim.wo[windowId].fillchars = "eob: "
+    vim.wo[windowId].signcolumn = "no"
 
     return windowId
 end
