@@ -328,6 +328,10 @@ function Core:spawnInputPopup(windowTitle, initialText, handleConfirm, bordersTy
         self:addTitleToWindow(popupWindowId, windowTitle)
 
     self:setupKeymaps(popupBufferNumber, popupWindowId, {
+        ["<C-w>"] = function(lineNumber, lineContent) 
+           -- Delete the content (not the prefix) of th prompt buffer.
+           vim.api.nvim_buf_set_lines(popupBufferNumber, 0, -1, false, { "" })
+        end, 
         ["<Cr>"] = function(lineNumber, lineContent)
             handleConfirm(lineNumber, lineContent:sub(#prefix + 1))
             self:closeActivePopup()
