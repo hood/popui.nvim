@@ -24,12 +24,12 @@ It's a tiny (currently 466 LoC) UI suite designed to make your NeoVim workflow f
 ![Snapshot #2](https://i.imgur.com/d5COuVp.png)
 <br />
 <h4>Diagnostics navigator</h4>
-(Displays all diagnostic messages for the current buffer. Press `<Cr>` to jump to the currently highlighted diagnostic coordinates.)
+(Displays all diagnostic messages for the current buffer. Press `Cr` to jump to the currently highlighted diagnostic coordinates.)
 
 ![Snapshot #3](https://i.imgur.com/ZHYi372.png)
 <br />
 <h4>Marks manager</h4>
-(Displays all uppercase marks. Press `<Cr>` to navigate to a mark's position, press `x` or `d` to permanently delete a mark.)
+(Displays all uppercase marks. Press `Cr` to navigate to a mark's position, press `x` or `d` to permanently delete a mark.)
 
 ![Snapshot #4](https://i.imgur.com/dsfOUn1.png)
 
