@@ -1,17 +1,5 @@
 local core = require("popui/core")
 
-local formatEntries = function(entries, formatter)
-    local formatItem = formatter or tostring
-
-    local results = {}
-
-    for index, entry in pairs(entries) do
-        table.insert(results, string.format("%s", formatItem(entry)))
-    end
-
-    return results
-end
-
 local customUISelect = function(entries, stuff, onUserChoice)
     assert(
         entries ~= nil and not vim.tbl_isempty(entries),
@@ -19,9 +7,14 @@ local customUISelect = function(entries, stuff, onUserChoice)
     )
 
     core:spawnListPopup(
+        core.WindowTypes.CodeAction,
         "Code action",
-        formatEntries(entries, stuff.format_item),
-        function(lineNumber, lineContent)
+        core:formatEntries(
+            core.WindowTypes.CodeAction,
+            entries,
+            stuff.format_item
+        ),
+        function(lineNumber, _)
             onUserChoice(entries[lineNumber], lineNumber)
         end,
         vim.g.popui_border_style

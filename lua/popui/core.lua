@@ -12,6 +12,13 @@ Core.PopupTypes = {
     Input = "input",
 }
 
+Core.WindowTypes = {
+    CodeAction = "code-action",
+    DiagnosticsNavigator = "diagnostics-navigator",
+    InputOverrider = "input-overrider",
+    MarksManager = "marks-manager",
+}
+
 -- Get the size of the screen.
 local function getNvimSize()
     local uis = vim.api.nvim_list_uis()
@@ -30,7 +37,7 @@ end
 local getLongestEntry = function(entries)
     local result = 0
 
-    for index, entry in pairs(entries) do
+    for _, entry in pairs(entries) do
         if #entry > result then
             result = #entry
         end
@@ -58,8 +65,7 @@ end
 
 -- Calculate the position and size of the popup window, given the entries.
 local function getListWindowConfiguration(entries, bordersType)
-    local popupWidth = entries and getLongestEntry(entries) + 4
-        or 8
+    local popupWidth = entries and getLongestEntry(entries) or 8
     local popupHeight = entries and #entries or 1
 
     validatePopupSize(popupWidth, popupHeight)
@@ -76,7 +82,11 @@ local function getListWindowConfiguration(entries, bordersType)
 end
 
 -- Calculate the position and size of the popup window, given the initial text.
-local function getInputWindowConfiguration(initialText, windowTitle, bordersType)
+local function getInputWindowConfiguration(
+    initialText,
+    windowTitle,
+    bordersType
+)
     local popupWidth = math.max(#(initialText or ""), #(windowTitle or "")) + 4
     local popupHeight = 1
 
@@ -193,7 +203,11 @@ function Core:setupKeymaps(popupBufferNumber, popupWindowId, keymaps)
     end
 end
 
-function Core:setupDefaultKeymaps(popupBufferNumber, popupWindowId)
+function Core:setupDefaultKeymaps(
+    popupBufferNumber,
+    popupWindowId,
+    handleConfirm
+)
     local keymaps = {
         ["<Esc>"] = function()
             self:closeActivePopup()
@@ -204,7 +218,84 @@ function Core:setupDefaultKeymaps(popupBufferNumber, popupWindowId)
         ["<C-o>"] = function()
             self:closeActivePopup()
         end,
+        ["<Cr>"] = function(lineNumber, lineContent)
+            handleConfirm(lineNumber, lineContent)
+            self:closeActivePopup()
+        end,
     }
+
+    self:setupKeymaps(popupBufferNumber, popupWindowId, keymaps)
+end
+
+function Core:setupSpecificKeymaps(
+    popupBufferNumber,
+    popupWindowId,
+    windowType,
+    -- Cached arguments are needed to respawn a popup with the same arguments
+    -- used to create it.
+    cachedArguments
+)
+    local keymaps = {}
+
+    if windowType == self.WindowTypes.MarksManager then
+        local removeMark = function(_, lineContent)
+            vim.api.nvim_del_mark(vim.split(lineContent, "\t")[1])
+
+            vim.cmd("wviminfo!")
+            vim.cmd("wshada!")
+
+            self:closeActivePopup()
+
+            -- Recalculate marks.
+            local marks = vim.fn.getmarklist()
+
+            if #marks == 0 then
+                return
+            end
+
+            local entries =
+                self:formatEntries(self.WindowTypes.MarksManager, marks)
+
+            if #entries == 0 then
+                return
+            end
+
+            self:spawnListPopup(
+                self.WindowTypes.MarksManager,
+                cachedArguments.windowTitle,
+                entries,
+                cachedArguments.handleConfirm,
+                cachedArguments.bordersType
+            )
+        end
+
+        keymaps = {
+            ["x"] = removeMark,
+            ["d"] = removeMark,
+        }
+    elseif windowType == self.WindowTypes.InputOverrider then
+        self:setupKeymaps(popupBufferNumber, popupWindowId, {
+            ["<C-w>"] = function(_, _)
+                -- Delete the content (not the prefix) of th prompt buffer.
+                vim.api.nvim_buf_set_lines(
+                    popupBufferNumber,
+                    0,
+                    -1,
+                    false,
+                    { "" }
+                )
+            end,
+            -- Override the default `<Cr>` keymap to handle the prefix used in
+            -- input popups.
+            ["<Cr>"] = function(lineNumber, lineContent)
+                cachedArguments.handleConfirm(
+                    lineNumber,
+                    lineContent:sub(#cachedArguments.prefix + 1)
+                )
+                self:closeActivePopup()
+            end,
+        })
+    end
 
     self:setupKeymaps(popupBufferNumber, popupWindowId, keymaps)
 end
@@ -250,7 +341,13 @@ function Core:closeActivePopup()
     self.activeTitleBufferNumber = nil
 end
 
-function Core:spawnListPopup(windowTitle, entries, handleConfirm, bordersType)
+function Core:spawnListPopup(
+    windowType,
+    windowTitle,
+    entries,
+    handleConfirm,
+    bordersType
+)
     local popupBufferNumber = self:createBuffer()
 
     -- Create the popup, calculating its size based on the entries.
@@ -272,13 +369,12 @@ function Core:spawnListPopup(windowTitle, entries, handleConfirm, bordersType)
     local titleWindowId, titleBufferNumber =
         self:addTitleToWindow(popupWindowId, windowTitle)
 
-    self:setupKeymaps(popupBufferNumber, popupWindowId, {
-        ["<Cr>"] = function(lineNumber, lineContent)
-            handleConfirm(lineNumber, lineContent)
-            self:closeActivePopup()
-        end,
+    self:setupDefaultKeymaps(popupBufferNumber, popupWindowId, handleConfirm)
+    self:setupSpecificKeymaps(popupBufferNumber, popupWindowId, windowType, {
+        windowTitle = windowTitle,
+        handleConfirm = handleConfirm,
+        bordersType = bordersType,
     })
-    self:setupDefaultKeymaps(popupBufferNumber, popupWindowId)
 
     self:registerPopup(
         popupWindowId,
@@ -289,7 +385,13 @@ function Core:spawnListPopup(windowTitle, entries, handleConfirm, bordersType)
     )
 end
 
-function Core:spawnInputPopup(windowTitle, initialText, handleConfirm, bordersType)
+function Core:spawnInputPopup(
+    windowType,
+    windowTitle,
+    initialText,
+    handleConfirm,
+    bordersType
+)
     local popupBufferNumber = self:createBuffer()
 
     -- Create the popup, calculating its size based on the entries.
@@ -327,17 +429,13 @@ function Core:spawnInputPopup(windowTitle, initialText, handleConfirm, bordersTy
     local titleWindowId, titleBufferNumber =
         self:addTitleToWindow(popupWindowId, windowTitle)
 
-    self:setupKeymaps(popupBufferNumber, popupWindowId, {
-        ["<C-w>"] = function(lineNumber, lineContent) 
-           -- Delete the content (not the prefix) of th prompt buffer.
-           vim.api.nvim_buf_set_lines(popupBufferNumber, 0, -1, false, { "" })
-        end, 
-        ["<Cr>"] = function(lineNumber, lineContent)
-            handleConfirm(lineNumber, lineContent:sub(#prefix + 1))
-            self:closeActivePopup()
-        end,
-    })
     self:setupDefaultKeymaps(popupBufferNumber, popupWindowId)
+    self:setupSpecificKeymaps(popupBufferNumber, popupWindowId, windowType, {
+        windowTitle = windowTitle,
+        handleConfirm = handleConfirm,
+        bordersType = bordersType,
+        prefix = prefix,
+    })
 
     self:registerPopup(
         popupWindowId,
@@ -346,6 +444,54 @@ function Core:spawnInputPopup(windowTitle, initialText, handleConfirm, bordersTy
         titleWindowId,
         titleBufferNumber
     )
+end
+
+function Core:formatEntries(windowType, entries, formatter)
+    local results = {}
+
+    -- Code action
+    if windowType == self.WindowTypes.CodeAction then
+        local formatItem = formatter or tostring
+
+        for _, entry in pairs(entries) do
+            table.insert(results, string.format("%s", formatItem(entry)))
+        end
+    -- Diagnostics navigator
+    elseif windowType == self.WindowTypes.DiagnosticsNavigator then
+        local formatItem = function(entry)
+            return (entry.lnum or "?")
+                .. ":"
+                .. (entry.col or "?")
+                .. " ["
+                .. (entry.code or "?")
+                .. "] "
+                .. (entry.message and entry.message:gsub("\r?\n", " ") or "?")
+        end
+
+        for _, entry in pairs(entries) do
+            table.insert(results, string.format("%s", formatItem(entry)))
+        end
+    -- Marks manager
+    elseif windowType == self.WindowTypes.MarksManager then
+        for _, mark in pairs(entries) do
+            local pathSegments = vim.split(mark.file, "/")
+
+            local markSign = mark.mark:gsub("'", "")
+
+            -- Ignore number marks, since they're created and persisted when
+            -- exiting NeoVim and are not part of our main use-case.
+            -- (ref.: https://neovim.io/doc/user/starting.html#shada).
+            if tonumber(markSign, 10) == nil then
+                results[#results + 1] = markSign
+                    .. "\t"
+                    .. pathSegments[#pathSegments - 1]
+                    .. "/"
+                    .. pathSegments[#pathSegments]
+            end
+        end
+    end
+
+    return results
 end
 
 return Core
