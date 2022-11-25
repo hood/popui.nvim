@@ -341,6 +341,49 @@ function Core:closeActivePopup()
     self.activeTitleBufferNumber = nil
 end
 
+function Core:highlightPopupEntries(windowType, popupBufferNumber, entries)
+    if vim.fn.hlexists("PopuiCoordinates") == 0 then
+        vim.cmd("highlight PopuiCoordinates ctermfg=Red guifg=#AA99CC")
+    end
+
+    if vim.fn.hlexists("PopuiDiagnosticsCodes") == 0 then
+        vim.cmd("highlight PopuiDiagnosticsCodes ctermfg=Yellow guifg=#BBAA77")
+    end
+
+    if windowType == "marks-manager" then
+        for i = 0, #entries - 1 do
+            vim.api.nvim_buf_add_highlight(
+                popupBufferNumber,
+                -1,
+                "PopuiCoordinates",
+                i,
+                0,
+                vim.fn.strchars(entries[i + 1]:match("^[^\t]+"))
+            )
+        end
+    elseif windowType == "diagnostics-navigator" then
+        for i = 0, #entries - 1 do
+            vim.api.nvim_buf_add_highlight(
+                popupBufferNumber,
+                -1,
+                "PopuiCoordinates",
+                i,
+                0,
+                vim.fn.strchars(entries[i + 1]:match("^[^\t]+"))
+            )
+
+            vim.api.nvim_buf_add_highlight(
+                popupBufferNumber,
+                -1,
+                "PopuiDiagnosticsCodes",
+                i,
+                vim.fn.strchars(entries[i + 1]:match("^[^\t]+")) + 1,
+                vim.fn.strchars(entries[i + 1]:match("^[^\t]+\t[^\t]+"))
+            )
+        end
+    end
+end
+
 function Core:spawnListPopup(
     windowType,
     windowTitle,
@@ -375,6 +418,8 @@ function Core:spawnListPopup(
         handleConfirm = handleConfirm,
         bordersType = bordersType,
     })
+
+    self:highlightPopupEntries(windowType, popupBufferNumber, entries)
 
     self:registerPopup(
         popupWindowId,
@@ -462,9 +507,11 @@ function Core:formatEntries(windowType, entries, formatter)
             return (entry.lnum or "?")
                 .. ":"
                 .. (entry.col or "?")
-                .. " ["
+                .. "\t"
+                .. "["
                 .. (entry.code or "?")
-                .. "] "
+                .. "]"
+                .. "\t"
                 .. (entry.message and entry.message:gsub("\r?\n", " ") or "?")
         end
 

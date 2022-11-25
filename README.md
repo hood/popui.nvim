@@ -56,5 +56,11 @@ vim.api.nvim_set_keymap("n", ",m", ':lua require"popui.marks-manager"()<CR>', { 
 let g:popui_border_style = "double"
 ```
 
+## Customize highlight groups
+```vim
+hi PopuiCoordinates  guifg=#6A1010 ctermfg=Red
+hi PopuiDiagnosticsCodes HopUnmatched guifg=#777777 ctermfg=Gray
+```
+
 ## Dependencies
 * No dependencies baby!
