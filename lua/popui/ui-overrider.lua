@@ -8,7 +8,7 @@ local customUISelect = function(entries, stuff, onUserChoice)
 
     core:spawnListPopup(
         core.WindowTypes.CodeAction,
-        "Code action",
+        stuff.prompt or "Options",
         core:formatEntries(
             core.WindowTypes.CodeAction,
             entries,
