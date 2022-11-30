@@ -46,58 +46,40 @@ local getLongestEntry = function(entries)
     return result
 end
 
--- Checks whether the popup window fits in the current window.
-local function validatePopupSize(popupWidth, popupHeight)
-    local width, height = getNvimSize()
-
-    if popupHeight > height then
-        error(
-            "unable to create the config, your window is too small, please zoom out"
-        )
-    end
-
-    if popupWidth > width then
-        error(
-            "unable to create the config, your window is too small, please zoom out"
-        )
-    end
-end
-
--- Calculate the position and size of the popup window, given the entries.
-local function getListWindowConfiguration(entries, bordersType)
-    local popupWidth = entries and getLongestEntry(entries) or 8
-    local popupHeight = entries and #entries or 1
-
-    validatePopupSize(popupWidth, popupHeight)
-
-    return {
-        relative = "cursor",
-        row = 0,
-        col = math.ceil(popupWidth / 2),
-        width = popupWidth,
-        height = popupHeight,
-        anchor = "SE",
-        border = bordersType == "sharp" and "single" or bordersType or "single",
-    }
-end
-
--- Calculate the position and size of the popup window, given the initial text.
-local function getInputWindowConfiguration(
-    initialText,
+local function getWindowConfiguration(
+    popupType,
+    bordersType,
     windowTitle,
-    bordersType
+    options
 )
-    local popupWidth = math.max(#(initialText or ""), #(windowTitle or "")) + 4
-    local popupHeight = 1
+    local popupWidth
+    local popupHeight
 
-    validatePopupSize(popupWidth, popupHeight)
+    if popupType == Core.PopupTypes.List then
+        popupWidth = math.max(
+            getLongestEntry(options.entries),
+            #(windowTitle or "") + 4
+        )
+        popupHeight = options.height or #options.entries + 2
+    elseif popupType == Core.PopupTypes.Input then
+        popupWidth = math.max(
+            #(options.initialText or ""),
+            #(windowTitle or "")
+        ) + 4
+        popupHeight = 1
+    end
+
+    local nvimWidth, nvimHeight = getNvimSize()
+
+    local width = math.min(popupWidth, nvimWidth)
+    local height = math.min(popupHeight, nvimHeight)
 
     return {
         relative = "cursor",
         row = 0,
         col = math.ceil(popupWidth / 2),
-        width = popupWidth,
-        height = popupHeight,
+        width = width,
+        height = height,
         anchor = "SE",
         border = bordersType == "sharp" and "single" or bordersType or "single",
     }
@@ -396,7 +378,12 @@ function Core:spawnListPopup(
     -- Create the popup, calculating its size based on the entries.
     local popupWindowId = self:createWindow(
         popupBufferNumber,
-        getListWindowConfiguration(entries, bordersType)
+        getWindowConfiguration(
+            self.PopupTypes.List,
+            bordersType,
+            windowTitle,
+            { entries = entries }
+        )
     )
 
     -- Write entries into the popup.
@@ -442,7 +429,12 @@ function Core:spawnInputPopup(
     -- Create the popup, calculating its size based on the entries.
     local popupWindowId = self:createWindow(
         popupBufferNumber,
-        getInputWindowConfiguration(initialText, windowTitle, bordersType)
+        getWindowConfiguration(
+            self.PopupTypes.List,
+            bordersType,
+            windowTitle,
+            { initialText = initialText }
+        )
     )
 
     local prefix = ">"
