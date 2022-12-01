@@ -139,7 +139,7 @@ function Core:createBuffer()
 
     vim.bo[bufferNumber].modifiable = true
     vim.bo[bufferNumber].readonly = false
-    vim.bo[bufferNumber].bufhidden = true
+    vim.bo[bufferNumber].bufhidden = "hide"
     vim.bo[bufferNumber].textwidth = 100
 
     return bufferNumber
