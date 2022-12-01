@@ -56,10 +56,8 @@ local function getWindowConfiguration(
     local popupHeight
 
     if popupType == Core.PopupTypes.List then
-        popupWidth = math.max(
-            getLongestEntry(options.entries),
-            #(windowTitle or "") + 4
-        )
+        popupWidth =
+            math.max(getLongestEntry(options.entries), #(windowTitle or "") + 4)
         popupHeight = options.height or #options.entries + 2
     elseif popupType == Core.PopupTypes.Input then
         popupWidth = math.max(
@@ -430,7 +428,7 @@ function Core:spawnInputPopup(
     local popupWindowId = self:createWindow(
         popupBufferNumber,
         getWindowConfiguration(
-            self.PopupTypes.List,
+            self.PopupTypes.Input,
             bordersType,
             windowTitle,
             { initialText = initialText }
