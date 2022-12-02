@@ -58,7 +58,7 @@ local function getWindowConfiguration(
     if popupType == Core.PopupTypes.List then
         popupWidth =
             math.max(getLongestEntry(options.entries), #(windowTitle or "") + 4)
-        popupHeight = options.height or #options.entries + 2
+        popupHeight = options.height or #options.entries
     elseif popupType == Core.PopupTypes.Input then
         popupWidth = math.max(
             #(options.initialText or ""),
