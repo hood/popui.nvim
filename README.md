@@ -7,7 +7,7 @@
 <br/>
 
 ## What's `popui` all about?
-It's a tiny (currently 507 LoC) UI suite designed to make your NeoVim workflow faster. It currently consists of four components: 
+It's a tiny (currently 584 LoC) UI suite designed to make your NeoVim workflow faster. It currently consists of four components: 
 - `ui-overrider`: alternative to NeoVim's default `vim.ui.select` menu
 - `input-overrider`: alternative to NeoVim's default `vim.ui.input` prompt
 - `diagnostics-navigator`: utility to quickly navigate and jump to LSP diagnostics issues in the current buffer
