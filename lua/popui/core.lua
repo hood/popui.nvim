@@ -17,6 +17,7 @@ Core.WindowTypes = {
     DiagnosticsNavigator = "diagnostics-navigator",
     InputOverrider = "input-overrider",
     MarksManager = "marks-manager",
+    ReferencesNavigator = "references-navigator",
 }
 
 -- Get the size of the screen.
@@ -254,7 +255,7 @@ function Core:setupSpecificKeymaps(
             ["d"] = removeMark,
         }
     elseif windowType == self.WindowTypes.InputOverrider then
-        self:setupKeymaps(popupBufferNumber, popupWindowId, {
+        self:setupkeymaps(popupbuffernumber, popupwindowid, {
             ["<C-w>"] = function(_, _)
                 -- Delete the content (not the prefix) of th prompt buffer.
                 vim.api.nvim_buf_set_lines(
@@ -330,7 +331,10 @@ function Core:highlightPopupEntries(windowType, popupBufferNumber, entries)
         vim.cmd("highlight PopuiDiagnosticsCodes ctermfg=Yellow guifg=#BBAA77")
     end
 
-    if windowType == "marks-manager" then
+    if
+        windowType == self.WindowTypes.MarksManager
+        or windowType == self.WindowTypes.ReferencesNavigator
+    then
         for i = 0, #entries - 1 do
             vim.api.nvim_buf_add_highlight(
                 popupBufferNumber,
@@ -341,7 +345,7 @@ function Core:highlightPopupEntries(windowType, popupBufferNumber, entries)
                 vim.fn.strchars(entries[i + 1]:match("^[^\t]+"))
             )
         end
-    elseif windowType == "diagnostics-navigator" then
+    elseif windowType == self.WindowTypes.DiagnosticsNavigator then
         for i = 0, #entries - 1 do
             vim.api.nvim_buf_add_highlight(
                 popupBufferNumber,
@@ -519,12 +523,49 @@ function Core:formatEntries(windowType, entries, formatter)
             -- exiting NeoVim and are not part of our main use-case.
             -- (ref.: https://neovim.io/doc/user/starting.html#shada).
             if tonumber(markSign, 10) == nil then
-                results[#results + 1] = markSign
+                table.insert(
+                    results,
+                    markSign
+                        .. "\t"
+                        .. pathSegments[#pathSegments - 1]
+                        .. "/"
+                        .. pathSegments[#pathSegments]
+                )
+            end
+        end
+    -- References navigator
+    elseif windowType == self.WindowTypes.ReferencesNavigator then
+        -- First calculate the longest coordinates length, so we can make all
+        -- file paths start at the same column number.
+        local longestCoordinatesLength = 0
+
+        for _, reference in pairs(entries) do
+            local coordinates = reference.lnum .. ":" .. reference.col
+
+            if #coordinates > longestCoordinatesLength then
+                longestCoordinatesLength = #coordinates
+            end
+        end
+
+        for _, reference in pairs(entries) do
+            local pathSegments = vim.split(reference.filename, "/")
+
+            -- Make it so all file paths start at the same column number.
+            local coordinates = reference.lnum .. ":" .. reference.col
+
+            if #coordinates < longestCoordinatesLength then
+                coordinates = coordinates
+                    .. string.rep(" ", longestCoordinatesLength - #coordinates)
+            end
+
+            table.insert(
+                results,
+                coordinates
                     .. "\t"
                     .. pathSegments[#pathSegments - 1]
                     .. "/"
                     .. pathSegments[#pathSegments]
-            end
+            )
         end
     end
 
