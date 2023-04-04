@@ -255,7 +255,7 @@ function Core:setupSpecificKeymaps(
             ["d"] = removeMark,
         }
     elseif windowType == self.WindowTypes.InputOverrider then
-        self:setupkeymaps(popupbuffernumber, popupwindowid, {
+        self:setupKeymaps(popupBufferNumber, popupWindowId, {
             ["<C-w>"] = function(_, _)
                 -- Delete the content (not the prefix) of th prompt buffer.
                 vim.api.nvim_buf_set_lines(
