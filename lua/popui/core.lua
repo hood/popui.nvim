@@ -35,7 +35,7 @@ local function getNvimSize()
     return width, height + vim.o.ch + 1
 end
 
-local getLongestEntry = function(entries)
+local getLongestEntryLength = function(entries)
     local result = 0
 
     for _, entry in pairs(entries) do
@@ -58,7 +58,7 @@ local function getWindowConfiguration(
 
     if popupType == Core.PopupTypes.List then
         popupWidth =
-            math.max(getLongestEntry(options.entries), #(windowTitle or "") + 6)
+            math.max(getLongestEntryLength(options.entries) + 1, #(windowTitle or "") + 6)
         popupHeight = options.height or #options.entries
     elseif popupType == Core.PopupTypes.Input then
         popupWidth = math.max(
