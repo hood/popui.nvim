@@ -13,6 +13,7 @@ Core.PopupTypes = {
 }
 
 Core.WindowTypes = {
+    BuffersManager = "buffers-manager",
     CodeAction = "code-action",
     DiagnosticsNavigator = "diagnostics-navigator",
     InputOverrider = "input-overrider",
@@ -208,6 +209,23 @@ function Core:setupDefaultKeymaps(
     self:setupKeymaps(popupBufferNumber, popupWindowId, keymaps)
 end
 
+-- Displays a buffer in the given window, optionally splitting it beforehand.
+function Core:openBuffer(bufferNumber, targetWindowId, splitCommand)
+    if not bufferNumber or not vim.api.nvim_buf_is_valid(bufferNumber) then
+        return
+    end
+
+    if targetWindowId and vim.api.nvim_win_is_valid(targetWindowId) then
+        vim.api.nvim_set_current_win(targetWindowId)
+    end
+
+    if splitCommand then
+        vim.cmd(splitCommand)
+    end
+
+    vim.api.nvim_set_current_buf(bufferNumber)
+end
+
 function Core:setupSpecificKeymaps(
     popupBufferNumber,
     popupWindowId,
@@ -218,7 +236,99 @@ function Core:setupSpecificKeymaps(
 )
     local keymaps = {}
 
-    if windowType == self.WindowTypes.MarksManager then
+    if windowType == self.WindowTypes.BuffersManager then
+        local buffers = cachedArguments.buffers
+        local originalWindowId = cachedArguments.originalWindowId
+
+        local openBufferAtIndex = function(index, splitCommand)
+            local buffer = buffers[index]
+
+            if not buffer then
+                return
+            end
+
+            self:closeActivePopup()
+
+            self:openBuffer(buffer.bufnr, originalWindowId, splitCommand)
+        end
+
+        local removeBuffer = function(lineNumber, _)
+            local buffer = buffers[lineNumber]
+
+            if not buffer then
+                return
+            end
+
+            if buffer.changed == 1 then
+                print("Cannot remove a buffer with unsaved changes.")
+                return
+            end
+
+            self:closeActivePopup()
+
+            vim.api.nvim_buf_delete(buffer.bufnr, {})
+
+            -- Recalculate buffers.
+            local remainingBuffers = vim.fn.getbufinfo({ buflisted = 1 })
+
+            if #remainingBuffers == 0 then
+                return
+            end
+
+            self:spawnListPopup(
+                self.WindowTypes.BuffersManager,
+                cachedArguments.windowTitle,
+                self:formatEntries(
+                    self.WindowTypes.BuffersManager,
+                    remainingBuffers
+                ),
+                cachedArguments.handleConfirm,
+                cachedArguments.bordersType,
+                {
+                    buffers = remainingBuffers,
+                    originalWindowId = originalWindowId,
+                }
+            )
+        end
+
+        keymaps = {
+            ["x"] = removeBuffer,
+            ["d"] = removeBuffer,
+            -- Override the default `<Cr>` keymap: the highlighted line has to
+            -- be resolved against the buffers list the popup was last spawned
+            -- with, which changes whenever a buffer gets removed.
+            ["<Cr>"] = function(lineNumber, _)
+                openBufferAtIndex(lineNumber)
+            end,
+            ["<C-v>"] = function(lineNumber, _)
+                openBufferAtIndex(lineNumber, "rightbelow vsplit")
+            end,
+            ["<C-s>"] = function(lineNumber, _)
+                openBufferAtIndex(lineNumber, "rightbelow split")
+            end,
+            -- Alias for terminals swallowing `<C-s>` as flow control.
+            ["<C-x>"] = function(lineNumber, _)
+                openBufferAtIndex(lineNumber, "rightbelow split")
+            end,
+        }
+
+        -- Bind the numbers assigned to the first nine buffers, so they can be
+        -- opened without navigating the list first. Prefixing a number with
+        -- `v` or `s` opens its buffer in a right or down split, respectively.
+        for index = 1, math.min(#buffers, 9) do
+            keymaps[tostring(index)] = function(_, _)
+                openBufferAtIndex(index)
+            end
+
+            keymaps["v" .. index] = function(_, _)
+                openBufferAtIndex(index, "rightbelow vsplit")
+            end
+
+            keymaps["s" .. index] = function(_, _)
+                openBufferAtIndex(index, "rightbelow split")
+            end
+        end
+    elseif windowType == self.WindowTypes.MarksManager then
         local removeMark = function(_, lineContent)
             vim.api.nvim_del_mark(vim.split(lineContent, "\t")[1])
 
@@ -331,7 +441,23 @@ function Core:highlightPopupEntries(windowType, popupBufferNumber, entries)
         vim.cmd("highlight PopuiDiagnosticsCodes ctermfg=Yellow guifg=#BBAA77")
     end
 
-    if
+    if windowType == self.WindowTypes.BuffersManager then
+        for i = 0, #entries - 1 do
+            local boundNumber = entries[i + 1]:match("^%d+")
+
+            -- Buffers past the ninth one have no number bound to them.
+            if boundNumber then
+                vim.api.nvim_buf_add_highlight(
+                    popupBufferNumber,
+                    -1,
+                    "PopuiCoordinates",
+                    i,
+                    0,
+                    #boundNumber
+                )
+            end
+        end
+    elseif
         windowType == self.WindowTypes.MarksManager
         or windowType == self.WindowTypes.ReferencesNavigator
     then
@@ -373,7 +499,9 @@ function Core:spawnListPopup(
     windowTitle,
     entries,
     handleConfirm,
-    bordersType
+    bordersType,
+    -- Additional context a specific window type needs in its keymaps.
+    extraArguments
 )
     local popupBufferNumber = self:createBuffer()
 
@@ -404,11 +532,16 @@ function Core:spawnListPopup(
         self:addTitleToWindow(popupWindowId, windowTitle)
 
     self:setupDefaultKeymaps(popupBufferNumber, popupWindowId, handleConfirm)
-    self:setupSpecificKeymaps(popupBufferNumber, popupWindowId, windowType, {
-        windowTitle = windowTitle,
-        handleConfirm = handleConfirm,
-        bordersType = bordersType,
-    })
+    self:setupSpecificKeymaps(
+        popupBufferNumber,
+        popupWindowId,
+        windowType,
+        vim.tbl_extend("force", extraArguments or {}, {
+            windowTitle = windowTitle,
+            handleConfirm = handleConfirm,
+            bordersType = bordersType,
+        })
+    )
 
     self:highlightPopupEntries(windowType, popupBufferNumber, entries)
 
@@ -492,8 +625,26 @@ end
 function Core:formatEntries(windowType, entries, formatter)
     local results = {}
 
+    -- Buffers manager
+    if windowType == self.WindowTypes.BuffersManager then
+        for index, buffer in ipairs(entries) do
+            -- Only the first nine buffers get a number bound to them, so that
+            -- they can be opened with a single keystroke.
+            local boundNumber = index <= 9 and tostring(index) or " "
+
+            local name = buffer.name == "" and "[No Name]"
+                or vim.fn.fnamemodify(buffer.name, ":~:.")
+
+            table.insert(
+                results,
+                boundNumber
+                    .. "  "
+                    .. name
+                    .. (buffer.changed == 1 and " [+]" or "")
+            )
+        end
     -- Code action
-    if windowType == self.WindowTypes.CodeAction then
+    elseif windowType == self.WindowTypes.CodeAction then
         local formatItem = formatter or tostring
 
         for _, entry in pairs(entries) do
