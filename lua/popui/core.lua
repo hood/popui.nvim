@@ -115,6 +115,10 @@ function Core:addTitleToWindow(referenceWindowId, title)
         zindex = 151,
         style = "minimal",
         noautocmd = true,
+        -- The title is inlaid into the parent popup's top border, so it must
+        -- opt out of `winborder` (NeoVim >= 0.11), which would otherwise wrap
+        -- it in a border of its own and make it overlap the entries.
+        border = "none",
     })
 
     vim.api.nvim_win_set_option(
